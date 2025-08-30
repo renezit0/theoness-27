@@ -20,24 +20,15 @@ interface MobileChatOverlayProps {
   roomId: string;
   user: any;
   players: Player[];
+  isOpen: boolean;
+  onClose: () => void;
 }
 
-export const MobileChatOverlay = ({ roomId, user, players }: MobileChatOverlayProps) => {
-  const [showOverlay, setShowOverlay] = useState(false);
+export const MobileChatOverlay = ({ roomId, user, players, isOpen, onClose }: MobileChatOverlayProps) => {
   const [activeTab, setActiveTab] = useState<'chat' | 'ranking'>('chat');
 
-  if (!showOverlay) {
-    return (
-      <div className="fixed top-20 right-4 z-50">
-        <Button
-          onClick={() => setShowOverlay(true)}
-          size="sm"
-          className="bg-gradient-primary hover:opacity-90 shadow-lg"
-        >
-          💬 Chat
-        </Button>
-      </div>
-    );
+  if (!isOpen) {
+    return null;
   }
 
   return (
@@ -64,7 +55,7 @@ export const MobileChatOverlay = ({ roomId, user, players }: MobileChatOverlayPr
           <Button
             variant="ghost"
             size="sm"
-            onClick={() => setShowOverlay(false)}
+            onClick={onClose}
           >
             ✕
           </Button>

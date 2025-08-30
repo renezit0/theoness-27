@@ -83,6 +83,7 @@ export const MultiplayerGame = ({ user, roomId, onLeaveRoom }: MultiplayerGamePr
   const [carriedFish, setCarriedFish] = useState<number | null>(null);
   const [currentLevel, setCurrentLevel] = useState(0);
   const [isMobile, setIsMobile] = useState(false);
+  const [showChatOverlay, setShowChatOverlay] = useState(false);
   const { toast } = useToast();
 
   // Detect mobile device
@@ -903,105 +904,128 @@ export const MultiplayerGame = ({ user, roomId, onLeaveRoom }: MultiplayerGamePr
     <div className="min-h-screen bg-gradient-background">
       {/* Mobile Layout */}
       {isMobile ? (
-        <div className="flex flex-col h-screen">
-          {/* Header Mobile */}
-          <div className="p-3 bg-background/80 backdrop-blur border-b">
+        <div className="fixed inset-0 flex flex-col overflow-hidden">
+          {/* Header Mobile Compacto */}
+          <div className="p-2 bg-background/90 backdrop-blur border-b flex-shrink-0">
             <div className="text-center">
-              <h1 className="text-lg font-bold bg-gradient-primary bg-clip-text text-transparent">
-                🎮 {room.name}
+              <h1 className="text-sm font-bold bg-gradient-primary bg-clip-text text-transparent">
+                🎮 {room.name} • Código: {room.code}
               </h1>
-              <div className="flex justify-center gap-3 text-xs text-muted-foreground">
-                <span>Código: {room.code}</span>
-                <span>👥 {players.length}/5</span>
-                <span>Status: {room.status === 'waiting' ? 'Aguardando' : room.status === 'playing' ? 'Em jogo' : 'Finalizado'}</span>
-              </div>
-            </div>
-          </div>
-
-          {/* Game Stats Mobile */}
-          {gameStarted && (
-            <div className="flex justify-center gap-4 p-2 bg-background/60 backdrop-blur text-sm font-semibold">
-              <span className="text-destructive">⏰ {timeLeft}s</span>
-              <span className="text-primary">🎯 Rodada {currentRound}</span>
-              <span className="text-accent">🐟 1 peixe</span>
-            </div>
-          )}
-
-          {/* Game Canvas Mobile */}
-          <div className="flex-1 flex items-center justify-center p-2">
-            <div className="relative">
-              {room.status === 'waiting' && (
-                <div className="absolute inset-0 z-10 bg-background/90 backdrop-blur flex flex-col items-center justify-center rounded-lg">
-                  <p className="mb-4 text-center">Aguardando início do jogo...</p>
-                  <Button onClick={startGame} className="bg-gradient-primary hover:opacity-90">
-                    🚀 Iniciar Jogo
-                  </Button>
+              {gameStarted && (
+                <div className="flex justify-center gap-3 text-xs text-muted-foreground">
+                  <span className="text-destructive">⏰ {timeLeft}s</span>
+                  <span className="text-primary">🎯 Rodada {currentRound}</span>
+                  <span className="text-accent">🐟 1 peixe</span>
                 </div>
               )}
-              
-              <canvas 
-                ref={canvasRef}
-                width={CANVAS_WIDTH}
-                height={CANVAS_HEIGHT}
-                className="border-2 border-primary/30 rounded-lg max-w-full max-h-full"
-                style={{ 
-                  width: '100%', 
-                  height: 'auto',
-                  maxWidth: '400px',
-                  maxHeight: '600px'
-                }}
-              />
             </div>
           </div>
 
-          {/* Mobile Controls */}
-          {gameStarted && (
-            <div className="p-4 bg-background/80 backdrop-blur border-t">
-              <div className="flex justify-between items-center max-w-md mx-auto">
-                {/* Left Control */}
+          {/* Game Area - Full Screen Mobile */}
+          <div className="flex-1 relative overflow-hidden">
+            {room.status === 'waiting' && (
+              <div className="absolute inset-0 z-20 bg-background/95 backdrop-blur flex flex-col items-center justify-center">
+                <p className="mb-4 text-center">Aguardando início do jogo...</p>
+                <Button onClick={startGame} className="bg-gradient-primary hover:opacity-90">
+                  🚀 Iniciar Jogo
+                </Button>
+              </div>
+            )}
+            
+            {/* Canvas que ocupa toda a área disponível */}
+            <canvas 
+              ref={canvasRef}
+              width={CANVAS_WIDTH}
+              height={CANVAS_HEIGHT}
+              className="w-full h-full object-contain bg-gradient-to-b from-sky-300 to-green-200"
+              style={{ 
+                touchAction: 'none',
+                maxWidth: '100vw',
+                maxHeight: '100%'
+              }}
+            />
+
+            {/* Controles Mobile - Overlay direto na tela */}
+            {gameStarted && (
+              <>
+                {/* Controle Esquerda */}
                 <button
-                  onTouchStart={() => handleTouchControl('left')}
-                  className="w-16 h-16 bg-primary/20 border-2 border-primary/40 rounded-full flex items-center justify-center text-2xl font-bold active:bg-primary/40 transition-colors"
+                  onTouchStart={(e) => {
+                    e.preventDefault();
+                    handleTouchControl('left');
+                  }}
+                  className="absolute left-4 bottom-20 w-14 h-14 bg-black/30 border-2 border-white/50 rounded-full flex items-center justify-center text-white text-xl font-bold active:bg-black/50 transition-colors shadow-lg backdrop-blur"
+                  style={{ touchAction: 'manipulation' }}
                 >
                   ←
                 </button>
 
-                {/* Jump Control */}
+                {/* Controle Direita */}
                 <button
-                  onTouchStart={() => handleTouchControl('jump')}
-                  className="w-20 h-20 bg-accent/20 border-2 border-accent/40 rounded-full flex items-center justify-center text-2xl font-bold active:bg-accent/40 transition-colors"
+                  onTouchStart={(e) => {
+                    e.preventDefault();
+                    handleTouchControl('right');
+                  }}
+                  className="absolute right-4 bottom-20 w-14 h-14 bg-black/30 border-2 border-white/50 rounded-full flex items-center justify-center text-white text-xl font-bold active:bg-black/50 transition-colors shadow-lg backdrop-blur"
+                  style={{ touchAction: 'manipulation' }}
+                >
+                  →
+                </button>
+
+                {/* Controle Pular - Centro */}
+                <button
+                  onTouchStart={(e) => {
+                    e.preventDefault();
+                    handleTouchControl('jump');
+                  }}
+                  className="absolute left-1/2 transform -translate-x-1/2 bottom-4 w-16 h-16 bg-red-500/40 border-2 border-red-300/70 rounded-full flex items-center justify-center text-white text-2xl font-bold active:bg-red-500/60 transition-colors shadow-lg backdrop-blur"
+                  style={{ touchAction: 'manipulation' }}
                 >
                   ↑
                 </button>
 
-                {/* Right Control */}
+                {/* Chat Button - Canto superior direito */}
                 <button
-                  onTouchStart={() => handleTouchControl('right')}
-                  className="w-16 h-16 bg-primary/20 border-2 border-primary/40 rounded-full flex items-center justify-center text-2xl font-bold active:bg-primary/40 transition-colors"
+                  onClick={() => setShowChatOverlay(true)}
+                  className="absolute top-4 right-4 w-10 h-10 bg-blue-500/40 border border-white/50 rounded-full flex items-center justify-center text-white text-sm font-bold shadow-lg backdrop-blur"
                 >
-                  →
+                  💬
                 </button>
-              </div>
-              
-              {/* Mobile Instructions */}
-              <div className="text-center text-xs text-muted-foreground mt-3">
-                📱 Toque nos botões para jogar • Pegue o peixe e leve ao arranhador!
-              </div>
-            </div>
-          )}
 
-          {/* Mobile Bottom Actions */}
-          <div className="p-3 bg-background/80 backdrop-blur border-t flex gap-2">
-            <Button onClick={leaveRoom} variant="outline" size="sm" className="flex-1">
-              ← Sair
-            </Button>
-            <Button onClick={onLeaveRoom} variant="secondary" size="sm" className="flex-1">
-              🔄 Mudar Sala
-            </Button>
+                {/* Botões de Ação - Canto superior esquerdo */}
+                <div className="absolute top-4 left-4 flex gap-1">
+                  <button
+                    onClick={leaveRoom}
+                    className="px-2 py-1 bg-red-500/40 border border-white/50 rounded text-white text-xs font-bold shadow-lg backdrop-blur"
+                  >
+                    Sair
+                  </button>
+                  <button
+                    onClick={onLeaveRoom}
+                    className="px-2 py-1 bg-blue-500/40 border border-white/50 rounded text-white text-xs font-bold shadow-lg backdrop-blur"
+                  >
+                    Mudar
+                  </button>
+                </div>
+
+                {/* Instruções Mobile - Overlay discreto */}
+                <div className="absolute bottom-24 left-1/2 transform -translate-x-1/2 text-center">
+                  <div className="bg-black/30 backdrop-blur px-3 py-1 rounded-full">
+                    <p className="text-white text-xs">Pegue o peixe e leve ao arranhador! 🐟→🏆</p>
+                  </div>
+                </div>
+              </>
+            )}
           </div>
 
           {/* Mobile Chat Overlay */}
-          <MobileChatOverlay roomId={roomId} user={user} players={players} />
+          <MobileChatOverlay 
+            roomId={roomId} 
+            user={user} 
+            players={players} 
+            isOpen={showChatOverlay}
+            onClose={() => setShowChatOverlay(false)}
+          />
         </div>
       ) : (
         /* Desktop Layout */
