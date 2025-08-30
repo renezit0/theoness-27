@@ -29,6 +29,14 @@ interface Fish {
   width: number;
   height: number;
   collected: boolean;
+  carriedBy: string | null;
+}
+
+interface ScratchingPost {
+  x: number;
+  y: number;
+  width: number;
+  height: number;
 }
 
 interface Player {
@@ -67,10 +75,12 @@ export const MultiplayerGame = ({ user, roomId, onLeaveRoom }: MultiplayerGamePr
   const [players, setPlayers] = useState<Player[]>([]);
   const [currentPlayer, setCurrentPlayer] = useState<Player | null>(null);
   const [gameStarted, setGameStarted] = useState(false);
-  const [timeLeft, setTimeLeft] = useState(120);
+  const [timeLeft, setTimeLeft] = useState(60);
   const [imageLoaded, setImageLoaded] = useState(false);
   const [currentRound, setCurrentRound] = useState(1);
   const [roundFishCollected, setRoundFishCollected] = useState<{[key: string]: number}>({});
+  const [carriedFish, setCarriedFish] = useState<number | null>(null);
+  const [currentLevel, setCurrentLevel] = useState(0);
   const { toast } = useToast();
 
   // Game objects
@@ -90,19 +100,60 @@ export const MultiplayerGame = ({ user, roomId, onLeaveRoom }: MultiplayerGamePr
     facingDirection: 'right'
   });
 
-  // Level data (simplified for multiplayer)
-  const platforms = useRef<Platform[]>([
-    { x: 0, y: 580, width: 800, height: 20 }, // Ground
-    { x: 200, y: 450, width: 150, height: 20 },
-    { x: 500, y: 400, width: 100, height: 20 },
-    { x: 150, y: 300, width: 120, height: 20 },
-  ]);
+  // Multiple level configurations for random selection
+  const levelConfigs = [
+    // Level 1 - Basic vertical climb
+    {
+      platforms: [
+        { x: 0, y: 580, width: 800, height: 20 }, // Ground
+        { x: 100, y: 480, width: 120, height: 20 },
+        { x: 580, y: 380, width: 120, height: 20 },
+        { x: 200, y: 280, width: 120, height: 20 },
+        { x: 480, y: 180, width: 120, height: 20 },
+      ],
+      fishes: [
+        { x: 130, y: 450, width: 25, height: 20, collected: false, carriedBy: null },
+        { x: 610, y: 350, width: 25, height: 20, collected: false, carriedBy: null },
+        { x: 230, y: 250, width: 25, height: 20, collected: false, carriedBy: null },
+      ]
+    },
+    // Level 2 - Zigzag pattern
+    {
+      platforms: [
+        { x: 0, y: 580, width: 800, height: 20 }, // Ground
+        { x: 50, y: 480, width: 100, height: 20 },
+        { x: 650, y: 400, width: 100, height: 20 },
+        { x: 100, y: 320, width: 100, height: 20 },
+        { x: 600, y: 240, width: 100, height: 20 },
+        { x: 150, y: 160, width: 100, height: 20 },
+      ],
+      fishes: [
+        { x: 75, y: 450, width: 25, height: 20, collected: false, carriedBy: null },
+        { x: 675, y: 370, width: 25, height: 20, collected: false, carriedBy: null },
+        { x: 175, y: 130, width: 25, height: 20, collected: false, carriedBy: null },
+      ]
+    },
+    // Level 3 - Tower challenge
+    {
+      platforms: [
+        { x: 0, y: 580, width: 800, height: 20 }, // Ground
+        { x: 350, y: 480, width: 100, height: 20 },
+        { x: 300, y: 380, width: 200, height: 20 },
+        { x: 350, y: 280, width: 100, height: 20 },
+        { x: 300, y: 180, width: 200, height: 20 },
+      ],
+      fishes: [
+        { x: 375, y: 450, width: 25, height: 20, collected: false, carriedBy: null },
+        { x: 400, y: 350, width: 25, height: 20, collected: false, carriedBy: null },
+        { x: 375, y: 150, width: 25, height: 20, collected: false, carriedBy: null },
+      ]
+    }
+  ];
 
-  const fishes = useRef<Fish[]>([
-    { x: 250, y: 420, width: 25, height: 20, collected: false },
-    { x: 530, y: 370, width: 25, height: 20, collected: false },
-    { x: 180, y: 270, width: 25, height: 20, collected: false },
-  ]);
+  const platforms = useRef<Platform[]>([]);
+
+  const fishes = useRef<Fish[]>([]);
+  const scratchingPost = useRef<ScratchingPost>({ x: 375, y: 50, width: 50, height: 60 });
 
   const GRAVITY = 0.5;
   const JUMP_FORCE = -12;
@@ -299,10 +350,41 @@ export const MultiplayerGame = ({ user, roomId, onLeaveRoom }: MultiplayerGamePr
     }
   }, [roomId, user.id]);
 
-  const collectFish = useCallback(async (fishIndex: number) => {
-    if (!currentPlayer) return;
+  // Initialize level when game starts
+  const initializeLevel = useCallback(() => {
+    const randomLevel = Math.floor(Math.random() * levelConfigs.length);
+    setCurrentLevel(randomLevel);
+    platforms.current = [...levelConfigs[randomLevel].platforms];
+    fishes.current = [...levelConfigs[randomLevel].fishes];
+    setCarriedFish(null);
+  }, []);
 
-    const isFirstToCollect = !roundFishCollected[`fish_${fishIndex}_round_${currentRound}`];
+  const collectFish = useCallback(async (fishIndex: number) => {
+    if (!currentPlayer || carriedFish !== null) return; // Can only carry one fish at a time
+
+    try {
+      // Mark fish as carried
+      fishes.current[fishIndex].carriedBy = user.id;
+      setCarriedFish(fishIndex);
+
+      await supabase
+        .from('chat_messages')
+        .insert({
+          room_id: roomId,
+          user_id: user.id,
+          player_name: 'Sistema',
+          message: `🐟 ${currentPlayer.player_name} pegou um peixe! Leve-o ao arranhador!`,
+          message_type: 'game'
+        });
+
+    } catch (error) {
+      console.error('Error collecting fish:', error);
+    }
+  }, [currentPlayer, roomId, user.id, carriedFish]);
+
+  const deliverFish = useCallback(async () => {
+    if (!currentPlayer || carriedFish === null) return;
+
     const newFishCount = currentPlayer.fish_collected + 1;
 
     try {
@@ -314,10 +396,9 @@ export const MultiplayerGame = ({ user, roomId, onLeaveRoom }: MultiplayerGamePr
         .eq('room_id', roomId)
         .eq('user_id', user.id);
 
-      // Send chat message
-      const message = isFirstToCollect 
-        ? `🏆 ${currentPlayer.player_name} coletou o peixe primeiro! (Rodada ${currentRound})`
-        : `🐟 ${currentPlayer.player_name} coletou um peixinho! (Rodada ${currentRound})`;
+      // Mark fish as collected
+      fishes.current[carriedFish].collected = true;
+      setCarriedFish(null);
 
       await supabase
         .from('chat_messages')
@@ -325,23 +406,14 @@ export const MultiplayerGame = ({ user, roomId, onLeaveRoom }: MultiplayerGamePr
           room_id: roomId,
           user_id: user.id,
           player_name: 'Sistema',
-          message,
+          message: `🎯 ${currentPlayer.player_name} entregou um peixe no arranhador! (+1 ponto)`,
           message_type: 'game'
         });
 
-      // Track first fish collection
-      if (isFirstToCollect) {
-        setRoundFishCollected(prev => ({
-          ...prev,
-          [`fish_${fishIndex}_round_${currentRound}`]: Date.now()
-        }));
-      }
-
-      fishes.current[fishIndex].collected = true;
     } catch (error) {
-      console.error('Error collecting fish:', error);
+      console.error('Error delivering fish:', error);
     }
-  }, [currentPlayer, roomId, user.id, currentRound, roundFishCollected]);
+  }, [currentPlayer, roomId, user.id, carriedFish]);
 
   const checkWinCondition = useCallback(() => {
     const allPlayersCollected = players.every(player => player.fish_collected >= currentRound);
@@ -375,7 +447,8 @@ export const MultiplayerGame = ({ user, roomId, onLeaveRoom }: MultiplayerGamePr
         });
 
       setGameStarted(true);
-      setTimeLeft(120);
+      setTimeLeft(60);
+      initializeLevel();
     } catch (error) {
       console.error('Error starting game:', error);
     }
@@ -385,7 +458,10 @@ export const MultiplayerGame = ({ user, roomId, onLeaveRoom }: MultiplayerGamePr
     try {
       const nextRound = currentRound + 1;
       setCurrentRound(nextRound);
-      setTimeLeft(120);
+      setTimeLeft(60);
+      
+      // Initialize new random level
+      initializeLevel();
       
       // Reset fish positions
       fishes.current = fishes.current.map(fish => ({ ...fish, collected: false }));
@@ -564,12 +640,17 @@ export const MultiplayerGame = ({ user, roomId, onLeaveRoom }: MultiplayerGamePr
     // Update position in database
     updatePlayerPosition(kitty.current.x, kitty.current.y);
 
-    // Fish collection
+    // Fish collection (only if not carrying one)
     fishes.current.forEach((fish, index) => {
-      if (!fish.collected && checkCollision(kitty.current, fish)) {
+      if (!fish.collected && fish.carriedBy === null && carriedFish === null && checkCollision(kitty.current, fish)) {
         collectFish(index);
       }
     });
+
+    // Fish delivery to scratching post
+    if (carriedFish !== null && checkCollision(kitty.current, scratchingPost.current)) {
+      deliverFish();
+    }
 
     // Draw platforms
     platforms.current.forEach(platform => {
@@ -584,9 +665,37 @@ export const MultiplayerGame = ({ user, roomId, onLeaveRoom }: MultiplayerGamePr
       ctx.strokeRect(platform.x, platform.y, platform.width, platform.height);
     });
 
+    // Draw scratching post
+    const post = scratchingPost.current;
+    ctx.save();
+    ctx.shadowColor = '#8b5cf6';
+    ctx.shadowBlur = 15;
+    
+    // Post gradient
+    const postGradient = ctx.createLinearGradient(post.x, post.y, post.x + post.width, post.y + post.height);
+    postGradient.addColorStop(0, '#a855f7');
+    postGradient.addColorStop(1, '#7c3aed');
+    ctx.fillStyle = postGradient;
+    ctx.fillRect(post.x, post.y, post.width, post.height);
+    
+    // Post decoration
+    ctx.font = '40px Arial';
+    ctx.textAlign = 'center';
+    ctx.fillText('🏆', post.x + post.width/2, post.y + post.height/2 + 10);
+    
+    // Goal text
+    ctx.font = '12px Arial';
+    ctx.fillStyle = '#fff';
+    ctx.strokeStyle = '#000';
+    ctx.lineWidth = 2;
+    ctx.strokeText('ENTREGA AQUI!', post.x + post.width/2, post.y - 10);
+    ctx.fillText('ENTREGA AQUI!', post.x + post.width/2, post.y - 10);
+    
+    ctx.restore();
+
     // Draw fishes
     fishes.current.forEach((fish, index) => {
-      if (!fish.collected) {
+      if (!fish.collected && fish.carriedBy !== user.id) {
         const floatY = Math.sin((kitty.current.animationFrame + index * 30) * 0.05) * 3;
         
         ctx.save();
@@ -670,11 +779,25 @@ export const MultiplayerGame = ({ user, roomId, onLeaveRoom }: MultiplayerGamePr
       
       // Draw fish count
       ctx.fillText(`🐟 ${player.fish_collected}`, x + 20, y + 65);
+      
+      // Draw carried fish for current player
+      if (player.user_id === user.id && carriedFish !== null) {
+        ctx.font = '16px Arial';
+        ctx.fillText('🐟', x + 20, y - 15);
+        
+        // Floating animation for carried fish
+        const floatOffset = Math.sin(kitty.current.animationFrame * 0.1) * 2;
+        ctx.save();
+        ctx.shadowColor = '#f97316';
+        ctx.shadowBlur = 8;
+        ctx.fillText('🐟', x + 20, y - 20 + floatOffset);
+        ctx.restore();
+      }
     });
 
     kitty.current.animationFrame += 1;
     animationRef.current = requestAnimationFrame(gameLoop);
-  }, [gameStarted, players, user.id, imageLoaded, updatePlayerPosition, collectFish]);
+  }, [gameStarted, players, user.id, imageLoaded, updatePlayerPosition, collectFish, deliverFish, carriedFish]);
 
   // Setup and cleanup
   useEffect(() => {
@@ -744,7 +867,7 @@ export const MultiplayerGame = ({ user, roomId, onLeaveRoom }: MultiplayerGamePr
 
               {gameStarted && (
                 <div className="text-center text-sm text-muted-foreground mt-4">
-                  <p>🎮 Use WASD ou setas para mover • Todos devem coletar {currentRound} peixe(s)!</p>
+                  <p>🎮 Use WASD ou setas para mover • Pegue o peixe e leve ao arranhador no topo! • Meta: {currentRound} peixe(s) por jogador</p>
                 </div>
               )}
             </Card>
