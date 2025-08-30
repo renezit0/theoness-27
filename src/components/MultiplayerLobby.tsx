@@ -59,40 +59,32 @@ export const MultiplayerLobby = ({ user, onJoinRoom, onBackToProfile }: Multipla
     try {
       const { data: roomsData, error } = await supabase
         .from('rooms')
-        .select(`
-          *,
-          room_players!inner(
-            count,
-            is_online
-          )
-          `)
+        .select('*')
         .in('status', ['waiting', 'playing'])
         .order('created_at', { ascending: false });
 
       if (error) throw error;
 
-      // Filter rooms that have online players or are waiting status
-      const roomsWithOnlinePlayers = [];
+      // Process rooms and get player counts
+      const roomsWithPlayerCounts = [];
       
       for (const room of roomsData || []) {
-        const { data: onlinePlayersData } = await supabase
+        const { count } = await supabase
           .from('room_players')
-          .select('*')
+          .select('*', { count: 'exact' })
           .eq('room_id', room.id)
           .eq('is_online', true);
           
-        const onlineCount = onlinePlayersData?.length || 0;
+        const onlineCount = count || 0;
         
-        // Only show rooms that have online players or are in waiting status with potential
-        if (onlineCount > 0 || room.status === 'waiting') {
-          roomsWithOnlinePlayers.push({
-            ...room,
-            player_count: onlineCount
-          });
-        }
+        // Show all rooms, even empty ones
+        roomsWithPlayerCounts.push({
+          ...room,
+          player_count: onlineCount
+        });
       }
 
-      setRooms(roomsWithOnlinePlayers);
+      setRooms(roomsWithPlayerCounts);
     } catch (error) {
       console.error('Error loading rooms:', error);
       toast({

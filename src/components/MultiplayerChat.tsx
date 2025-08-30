@@ -108,6 +108,9 @@ export const MultiplayerChat = ({ roomId, user, players }: MultiplayerChatProps)
         });
 
       if (error) throw error;
+      
+      // Scroll to bottom immediately after sending
+      setTimeout(scrollToBottom, 50);
     } catch (error) {
       console.error('Error sending message:', error);
       toast({

@@ -100,7 +100,7 @@ export const MultiplayerGame = ({ user, roomId, onLeaveRoom }: MultiplayerGamePr
     facingDirection: 'right'
   });
 
-  // Multiple level configurations for random selection
+  // Multiple level configurations for random selection (1 fish per level)
   const levelConfigs = [
     // Level 1 - Basic vertical climb
     {
@@ -113,8 +113,6 @@ export const MultiplayerGame = ({ user, roomId, onLeaveRoom }: MultiplayerGamePr
       ],
       fishes: [
         { x: 130, y: 450, width: 25, height: 20, collected: false, carriedBy: null },
-        { x: 610, y: 350, width: 25, height: 20, collected: false, carriedBy: null },
-        { x: 230, y: 250, width: 25, height: 20, collected: false, carriedBy: null },
       ]
     },
     // Level 2 - Zigzag pattern
@@ -128,9 +126,7 @@ export const MultiplayerGame = ({ user, roomId, onLeaveRoom }: MultiplayerGamePr
         { x: 150, y: 160, width: 100, height: 20 },
       ],
       fishes: [
-        { x: 75, y: 450, width: 25, height: 20, collected: false, carriedBy: null },
         { x: 675, y: 370, width: 25, height: 20, collected: false, carriedBy: null },
-        { x: 175, y: 130, width: 25, height: 20, collected: false, carriedBy: null },
       ]
     },
     // Level 3 - Tower challenge
@@ -143,9 +139,20 @@ export const MultiplayerGame = ({ user, roomId, onLeaveRoom }: MultiplayerGamePr
         { x: 300, y: 180, width: 200, height: 20 },
       ],
       fishes: [
-        { x: 375, y: 450, width: 25, height: 20, collected: false, carriedBy: null },
-        { x: 400, y: 350, width: 25, height: 20, collected: false, carriedBy: null },
         { x: 375, y: 150, width: 25, height: 20, collected: false, carriedBy: null },
+      ]
+    },
+    // Level 4 - Side platforms
+    {
+      platforms: [
+        { x: 0, y: 580, width: 800, height: 20 }, // Ground
+        { x: 50, y: 450, width: 80, height: 20 },
+        { x: 670, y: 350, width: 80, height: 20 },
+        { x: 100, y: 250, width: 80, height: 20 },
+        { x: 620, y: 150, width: 80, height: 20 },
+      ],
+      fishes: [
+        { x: 650, y: 120, width: 25, height: 20, collected: false, carriedBy: null },
       ]
     }
   ];
@@ -406,14 +413,22 @@ export const MultiplayerGame = ({ user, roomId, onLeaveRoom }: MultiplayerGamePr
           room_id: roomId,
           user_id: user.id,
           player_name: 'Sistema',
-          message: `🎯 ${currentPlayer.player_name} entregou um peixe no arranhador! (+1 ponto)`,
+          message: `🎯 ${currentPlayer.player_name} entregou o peixe! Próxima rodada em 3 segundos...`,
           message_type: 'game'
         });
+
+      // Start next round automatically after fish delivery (Transformice style)
+      setTimeout(() => {
+        initializeLevel();
+        const nextRound = currentRound + 1;
+        setCurrentRound(nextRound);
+        setTimeLeft(60);
+      }, 3000);
 
     } catch (error) {
       console.error('Error delivering fish:', error);
     }
-  }, [currentPlayer, roomId, user.id, carriedFish]);
+  }, [currentPlayer, roomId, user.id, carriedFish, initializeLevel]);
 
   const checkWinCondition = useCallback(() => {
     const allPlayersCollected = players.every(player => player.fish_collected >= currentRound);
@@ -881,9 +896,12 @@ export const MultiplayerGame = ({ user, roomId, onLeaveRoom }: MultiplayerGamePr
               )}
             </Card>
 
-            <div className="text-center mt-4">
+            <div className="flex justify-center gap-2 mt-4">
               <Button onClick={leaveRoom} variant="outline">
                 ← Sair da Sala
+              </Button>
+              <Button onClick={onLeaveRoom} variant="secondary">
+                🔄 Mudar de Sala
               </Button>
             </div>
           </div>
