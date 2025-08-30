@@ -104,7 +104,7 @@ export const MultiplayerGame = ({ user, roomId, onLeaveRoom }: MultiplayerGamePr
     facingDirection: 'left' | 'right';
   }>({
     x: 100,
-    y: 300,
+    y: 1120, // Start at ground level (CANVAS_HEIGHT - ground platform height - kitty height)
     width: 40,
     height: 40,
     vx: 0,
@@ -114,82 +114,90 @@ export const MultiplayerGame = ({ user, roomId, onLeaveRoom }: MultiplayerGamePr
     facingDirection: 'right'
   });
 
-  // Multiple level configurations optimized for mobile portrait (400x600)
+  // Multiple level configurations optimized for mobile portrait HD (800x1200)
   const levelConfigs = [
     // Level 1 - Basic vertical climb
     {
       platforms: [
-        { x: 0, y: 580, width: 400, height: 20 }, // Ground
-        { x: 50, y: 480, width: 100, height: 20 },
-        { x: 250, y: 400, width: 100, height: 20 },
-        { x: 80, y: 320, width: 100, height: 20 },
-        { x: 220, y: 240, width: 120, height: 20 },
-        { x: 140, y: 160, width: 120, height: 20 },
+        { x: 0, y: 1180, width: 800, height: 20 }, // Ground
+        { x: 100, y: 1000, width: 200, height: 20 },
+        { x: 500, y: 850, width: 200, height: 20 },
+        { x: 150, y: 700, width: 200, height: 20 },
+        { x: 450, y: 550, width: 200, height: 20 },
+        { x: 200, y: 400, width: 200, height: 20 },
+        { x: 300, y: 250, width: 200, height: 20 },
       ],
       fishes: [
-        { x: 170, y: 130, width: 25, height: 20, collected: false, carriedBy: null },
+        { x: 375, y: 220, width: 25, height: 20, collected: false, carriedBy: null },
       ]
     },
     // Level 2 - Zigzag pattern
     {
       platforms: [
-        { x: 0, y: 580, width: 400, height: 20 }, // Ground
-        { x: 300, y: 500, width: 80, height: 20 },
-        { x: 20, y: 420, width: 80, height: 20 },
-        { x: 300, y: 340, width: 80, height: 20 },
-        { x: 20, y: 260, width: 80, height: 20 },
-        { x: 280, y: 180, width: 100, height: 20 },
-        { x: 150, y: 100, width: 100, height: 20 },
+        { x: 0, y: 1180, width: 800, height: 20 }, // Ground
+        { x: 600, y: 1050, width: 150, height: 20 },
+        { x: 50, y: 920, width: 150, height: 20 },
+        { x: 600, y: 790, width: 150, height: 20 },
+        { x: 50, y: 660, width: 150, height: 20 },
+        { x: 550, y: 530, width: 150, height: 20 },
+        { x: 100, y: 400, width: 150, height: 20 },
+        { x: 500, y: 270, width: 150, height: 20 },
+        { x: 300, y: 140, width: 200, height: 20 },
       ],
       fishes: [
-        { x: 180, y: 70, width: 25, height: 20, collected: false, carriedBy: null },
+        { x: 375, y: 110, width: 25, height: 20, collected: false, carriedBy: null },
       ]
     },
     // Level 3 - Center tower
     {
       platforms: [
-        { x: 0, y: 580, width: 400, height: 20 }, // Ground
-        { x: 160, y: 500, width: 80, height: 20 },
-        { x: 100, y: 420, width: 200, height: 20 },
-        { x: 160, y: 340, width: 80, height: 20 },
-        { x: 120, y: 260, width: 160, height: 20 },
-        { x: 160, y: 180, width: 80, height: 20 },
-        { x: 150, y: 100, width: 100, height: 20 },
+        { x: 0, y: 1180, width: 800, height: 20 }, // Ground
+        { x: 350, y: 1050, width: 100, height: 20 },
+        { x: 250, y: 920, width: 300, height: 20 },
+        { x: 350, y: 790, width: 100, height: 20 },
+        { x: 200, y: 660, width: 400, height: 20 },
+        { x: 350, y: 530, width: 100, height: 20 },
+        { x: 250, y: 400, width: 300, height: 20 },
+        { x: 350, y: 270, width: 100, height: 20 },
+        { x: 300, y: 140, width: 200, height: 20 },
       ],
       fishes: [
-        { x: 175, y: 70, width: 25, height: 20, collected: false, carriedBy: null },
+        { x: 375, y: 110, width: 25, height: 20, collected: false, carriedBy: null },
       ]
     },
     // Level 4 - Side jumps
     {
       platforms: [
-        { x: 0, y: 580, width: 400, height: 20 }, // Ground
-        { x: 20, y: 500, width: 70, height: 20 },
-        { x: 310, y: 440, width: 70, height: 20 },
-        { x: 20, y: 380, width: 70, height: 20 },
-        { x: 310, y: 320, width: 70, height: 20 },
-        { x: 50, y: 260, width: 70, height: 20 },
-        { x: 280, y: 200, width: 70, height: 20 },
-        { x: 160, y: 140, width: 80, height: 20 },
+        { x: 0, y: 1180, width: 800, height: 20 }, // Ground
+        { x: 50, y: 1050, width: 120, height: 20 },
+        { x: 630, y: 940, width: 120, height: 20 },
+        { x: 50, y: 830, width: 120, height: 20 },
+        { x: 630, y: 720, width: 120, height: 20 },
+        { x: 100, y: 610, width: 120, height: 20 },
+        { x: 580, y: 500, width: 120, height: 20 },
+        { x: 150, y: 390, width: 120, height: 20 },
+        { x: 530, y: 280, width: 120, height: 20 },
+        { x: 340, y: 170, width: 120, height: 20 },
       ],
       fishes: [
-        { x: 185, y: 110, width: 25, height: 20, collected: false, carriedBy: null },
+        { x: 375, y: 140, width: 25, height: 20, collected: false, carriedBy: null },
       ]
     },
     // Level 5 - Stairs
     {
       platforms: [
-        { x: 0, y: 580, width: 400, height: 20 }, // Ground
-        { x: 0, y: 520, width: 80, height: 20 },
-        { x: 80, y: 460, width: 80, height: 20 },
-        { x: 160, y: 400, width: 80, height: 20 },
-        { x: 240, y: 340, width: 80, height: 20 },
-        { x: 160, y: 280, width: 80, height: 20 },
-        { x: 80, y: 220, width: 80, height: 20 },
-        { x: 160, y: 160, width: 80, height: 20 },
+        { x: 0, y: 1180, width: 800, height: 20 }, // Ground
+        { x: 0, y: 1050, width: 160, height: 20 },
+        { x: 160, y: 920, width: 160, height: 20 },
+        { x: 320, y: 790, width: 160, height: 20 },
+        { x: 480, y: 660, width: 160, height: 20 },
+        { x: 320, y: 530, width: 160, height: 20 },
+        { x: 160, y: 400, width: 160, height: 20 },
+        { x: 320, y: 270, width: 160, height: 20 },
+        { x: 320, y: 140, width: 160, height: 20 },
       ],
       fishes: [
-        { x: 185, y: 130, width: 25, height: 20, collected: false, carriedBy: null },
+        { x: 375, y: 110, width: 25, height: 20, collected: false, carriedBy: null },
       ]
     }
   ];
@@ -197,13 +205,13 @@ export const MultiplayerGame = ({ user, roomId, onLeaveRoom }: MultiplayerGamePr
   const platforms = useRef<Platform[]>([]);
 
   const fishes = useRef<Fish[]>([]);
-  const scratchingPost = useRef<ScratchingPost>({ x: 175, y: 20, width: 50, height: 40 }); // Centered for mobile
+  const scratchingPost = useRef<ScratchingPost>({ x: 375, y: 40, width: 50, height: 60 }); // Centered at top for HD
 
-  const GRAVITY = 0.5;
-  const JUMP_FORCE = -12;
-  const MOVE_SPEED = 5;
-  const CANVAS_WIDTH = 400; // Mobile portrait width
-  const CANVAS_HEIGHT = 600; // Mobile portrait height
+  const GRAVITY = 0.8; // Increased gravity for more realistic physics
+  const JUMP_FORCE = -15; // Stronger jump to compensate for gravity
+  const MOVE_SPEED = 6;
+  const CANVAS_WIDTH = 800; // Higher resolution for mobile HD
+  const CANVAS_HEIGHT = 1200; // Taller for mobile portrait HD
 
   // Load kitty image
   useEffect(() => {
@@ -710,8 +718,9 @@ export const MultiplayerGame = ({ user, roomId, onLeaveRoom }: MultiplayerGamePr
       kitty.current.x = CANVAS_WIDTH - kitty.current.width;
     }
     if (kitty.current.y > CANVAS_HEIGHT) {
-      kitty.current.x = 100;
-      kitty.current.y = 300;
+      // Reset to ground level when falling
+      kitty.current.x = 400; // Center of screen
+      kitty.current.y = 1120; // Ground level
       kitty.current.vx = 0;
       kitty.current.vy = 0;
     }
@@ -932,16 +941,19 @@ export const MultiplayerGame = ({ user, roomId, onLeaveRoom }: MultiplayerGamePr
               </div>
             )}
             
-            {/* Canvas que ocupa toda a área disponível */}
+            {/* Canvas HD Mobile - Escala responsiva */}
             <canvas 
               ref={canvasRef}
               width={CANVAS_WIDTH}
               height={CANVAS_HEIGHT}
-              className="w-full h-full object-contain bg-gradient-to-b from-sky-300 to-green-200"
+              className="w-full h-full"
               style={{ 
                 touchAction: 'none',
-                maxWidth: '100vw',
-                maxHeight: '100%'
+                imageRendering: 'pixelated',
+                width: '100vw',
+                height: '100vh',
+                objectFit: 'contain',
+                background: 'linear-gradient(to bottom, #87CEEB, #98FB98, #90EE90)'
               }}
             />
 
