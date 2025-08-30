@@ -113,15 +113,6 @@ export const MultiplayerLobby = ({ user, onJoinRoom, onBackToProfile }: Multipla
       return;
     }
 
-    if (!roomName.trim()) {
-      toast({
-        title: "Nome obrigatório",
-        description: "Digite um nome para a sala",
-        variant: "destructive",
-      });
-      return;
-    }
-
     setIsCreating(true);
     try {
       // Generate room code
@@ -130,11 +121,23 @@ export const MultiplayerLobby = ({ user, onJoinRoom, onBackToProfile }: Multipla
 
       if (codeError) throw codeError;
 
+      // Auto-generate room name if not provided
+      let finalRoomName = roomName.trim();
+      if (!finalRoomName) {
+        // Count existing rooms to generate sequential name
+        const { count } = await supabase
+          .from('rooms')
+          .select('*', { count: 'exact' })
+          .like('name', 'Sala %');
+        
+        finalRoomName = `Sala ${(count || 0) + 1}`;
+      }
+
       // Create temporary room with 5 player limit
       const { data: room, error: roomError } = await supabase
         .from('rooms')
         .insert({
-          name: roomName.trim(),
+          name: finalRoomName,
           code: codeData,
           created_by: user.id,
           max_players: 5,
@@ -471,7 +474,7 @@ export const MultiplayerLobby = ({ user, onJoinRoom, onBackToProfile }: Multipla
             <h2 className="text-2xl font-bold mb-4 text-primary">🏗️ Criar Sala</h2>
             <div className="space-y-4">
               <Input
-                placeholder="Nome da sala"
+                placeholder="Nome da sala (opcional - será Sala 1, 2, 3...)"
                 value={roomName}
                 onChange={(e) => setRoomName(e.target.value)}
                 maxLength={50}

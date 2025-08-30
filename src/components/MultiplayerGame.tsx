@@ -592,17 +592,26 @@ export const MultiplayerGame = ({ user, roomId, onLeaveRoom }: MultiplayerGamePr
       kitty.current.animationState = 'idle';
     }
 
-    // Jump
-    if ((keysRef.current.has('w') || keysRef.current.has(' ') || keysRef.current.has('arrowup')) && 
-        Math.abs(kitty.current.vy) < 0.1) {
+    // Jump (improved physics)
+    if ((keysRef.current.has('w') || keysRef.current.has(' ') || keysRef.current.has('arrowup'))) {
       const kittyBottom = kitty.current.y + kitty.current.height;
-      const onPlatform = platforms.current.some(platform => 
-        kitty.current.x < platform.x + platform.width &&
-        kitty.current.x + kitty.current.width > platform.x &&
-        Math.abs(kittyBottom - platform.y) < 5
-      );
+      let onPlatform = false;
       
-      if (onPlatform) {
+      // Check if on ground
+      if (kittyBottom >= CANVAS_HEIGHT - 5) {
+        onPlatform = true;
+      } else {
+        // Check if on any platform with improved collision detection
+        onPlatform = platforms.current.some(platform => {
+          const isOnPlatform = kitty.current.x + kitty.current.width > platform.x + 5 &&
+                              kitty.current.x < platform.x + platform.width - 5 &&
+                              Math.abs(kittyBottom - platform.y) <= 10 &&
+                              kitty.current.vy >= -1; // Allow small upward velocity
+          return isOnPlatform;
+        });
+      }
+      
+      if (onPlatform && Math.abs(kitty.current.vy) < 2) {
         kitty.current.vy = JUMP_FORCE;
         kitty.current.animationState = 'jump';
       }
