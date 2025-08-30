@@ -1081,6 +1081,12 @@ export const MultiplayerGame = ({ user, roomId, onLeaveRoom }: MultiplayerGamePr
                       width={CANVAS_WIDTH}
                       height={CANVAS_HEIGHT}
                       className="border-2 border-primary/30 rounded-lg"
+                      style={{
+                        maxWidth: '400px',
+                        maxHeight: '600px',
+                        width: 'auto',
+                        height: 'auto'
+                      }}
                     />
                   </div>
 
