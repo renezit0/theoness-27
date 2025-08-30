@@ -5,6 +5,7 @@ import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { MultiplayerChat } from './MultiplayerChat';
 import { RankingBoard } from './RankingBoard';
+import { MobileChatOverlay } from './MobileChatOverlay';
 import kittyImage from '@/assets/kitty.png';
 
 interface GameObject {
@@ -81,7 +82,19 @@ export const MultiplayerGame = ({ user, roomId, onLeaveRoom }: MultiplayerGamePr
   const [roundFishCollected, setRoundFishCollected] = useState<{[key: string]: number}>({});
   const [carriedFish, setCarriedFish] = useState<number | null>(null);
   const [currentLevel, setCurrentLevel] = useState(0);
+  const [isMobile, setIsMobile] = useState(false);
   const { toast } = useToast();
+
+  // Detect mobile device
+  useEffect(() => {
+    const checkMobile = () => {
+      setIsMobile(window.innerWidth <= 768 || 'ontouchstart' in window);
+    };
+    
+    checkMobile();
+    window.addEventListener('resize', checkMobile);
+    return () => window.removeEventListener('resize', checkMobile);
+  }, []);
 
   // Game objects
   const kitty = useRef<GameObject & { 
@@ -100,59 +113,82 @@ export const MultiplayerGame = ({ user, roomId, onLeaveRoom }: MultiplayerGamePr
     facingDirection: 'right'
   });
 
-  // Multiple level configurations for random selection (1 fish per level)
+  // Multiple level configurations optimized for mobile portrait (400x600)
   const levelConfigs = [
     // Level 1 - Basic vertical climb
     {
       platforms: [
-        { x: 0, y: 580, width: 800, height: 20 }, // Ground
-        { x: 100, y: 480, width: 120, height: 20 },
-        { x: 580, y: 380, width: 120, height: 20 },
-        { x: 200, y: 280, width: 120, height: 20 },
-        { x: 480, y: 180, width: 120, height: 20 },
+        { x: 0, y: 580, width: 400, height: 20 }, // Ground
+        { x: 50, y: 480, width: 100, height: 20 },
+        { x: 250, y: 400, width: 100, height: 20 },
+        { x: 80, y: 320, width: 100, height: 20 },
+        { x: 220, y: 240, width: 120, height: 20 },
+        { x: 140, y: 160, width: 120, height: 20 },
       ],
       fishes: [
-        { x: 130, y: 450, width: 25, height: 20, collected: false, carriedBy: null },
+        { x: 170, y: 130, width: 25, height: 20, collected: false, carriedBy: null },
       ]
     },
     // Level 2 - Zigzag pattern
     {
       platforms: [
-        { x: 0, y: 580, width: 800, height: 20 }, // Ground
-        { x: 50, y: 480, width: 100, height: 20 },
-        { x: 650, y: 400, width: 100, height: 20 },
-        { x: 100, y: 320, width: 100, height: 20 },
-        { x: 600, y: 240, width: 100, height: 20 },
-        { x: 150, y: 160, width: 100, height: 20 },
+        { x: 0, y: 580, width: 400, height: 20 }, // Ground
+        { x: 300, y: 500, width: 80, height: 20 },
+        { x: 20, y: 420, width: 80, height: 20 },
+        { x: 300, y: 340, width: 80, height: 20 },
+        { x: 20, y: 260, width: 80, height: 20 },
+        { x: 280, y: 180, width: 100, height: 20 },
+        { x: 150, y: 100, width: 100, height: 20 },
       ],
       fishes: [
-        { x: 675, y: 370, width: 25, height: 20, collected: false, carriedBy: null },
+        { x: 180, y: 70, width: 25, height: 20, collected: false, carriedBy: null },
       ]
     },
-    // Level 3 - Tower challenge
+    // Level 3 - Center tower
     {
       platforms: [
-        { x: 0, y: 580, width: 800, height: 20 }, // Ground
-        { x: 350, y: 480, width: 100, height: 20 },
-        { x: 300, y: 380, width: 200, height: 20 },
-        { x: 350, y: 280, width: 100, height: 20 },
-        { x: 300, y: 180, width: 200, height: 20 },
+        { x: 0, y: 580, width: 400, height: 20 }, // Ground
+        { x: 160, y: 500, width: 80, height: 20 },
+        { x: 100, y: 420, width: 200, height: 20 },
+        { x: 160, y: 340, width: 80, height: 20 },
+        { x: 120, y: 260, width: 160, height: 20 },
+        { x: 160, y: 180, width: 80, height: 20 },
+        { x: 150, y: 100, width: 100, height: 20 },
       ],
       fishes: [
-        { x: 375, y: 150, width: 25, height: 20, collected: false, carriedBy: null },
+        { x: 175, y: 70, width: 25, height: 20, collected: false, carriedBy: null },
       ]
     },
-    // Level 4 - Side platforms
+    // Level 4 - Side jumps
     {
       platforms: [
-        { x: 0, y: 580, width: 800, height: 20 }, // Ground
-        { x: 50, y: 450, width: 80, height: 20 },
-        { x: 670, y: 350, width: 80, height: 20 },
-        { x: 100, y: 250, width: 80, height: 20 },
-        { x: 620, y: 150, width: 80, height: 20 },
+        { x: 0, y: 580, width: 400, height: 20 }, // Ground
+        { x: 20, y: 500, width: 70, height: 20 },
+        { x: 310, y: 440, width: 70, height: 20 },
+        { x: 20, y: 380, width: 70, height: 20 },
+        { x: 310, y: 320, width: 70, height: 20 },
+        { x: 50, y: 260, width: 70, height: 20 },
+        { x: 280, y: 200, width: 70, height: 20 },
+        { x: 160, y: 140, width: 80, height: 20 },
       ],
       fishes: [
-        { x: 650, y: 120, width: 25, height: 20, collected: false, carriedBy: null },
+        { x: 185, y: 110, width: 25, height: 20, collected: false, carriedBy: null },
+      ]
+    },
+    // Level 5 - Stairs
+    {
+      platforms: [
+        { x: 0, y: 580, width: 400, height: 20 }, // Ground
+        { x: 0, y: 520, width: 80, height: 20 },
+        { x: 80, y: 460, width: 80, height: 20 },
+        { x: 160, y: 400, width: 80, height: 20 },
+        { x: 240, y: 340, width: 80, height: 20 },
+        { x: 160, y: 280, width: 80, height: 20 },
+        { x: 80, y: 220, width: 80, height: 20 },
+        { x: 160, y: 160, width: 80, height: 20 },
+      ],
+      fishes: [
+        { x: 185, y: 130, width: 25, height: 20, collected: false, carriedBy: null },
       ]
     }
   ];
@@ -160,13 +196,13 @@ export const MultiplayerGame = ({ user, roomId, onLeaveRoom }: MultiplayerGamePr
   const platforms = useRef<Platform[]>([]);
 
   const fishes = useRef<Fish[]>([]);
-  const scratchingPost = useRef<ScratchingPost>({ x: 375, y: 50, width: 50, height: 60 });
+  const scratchingPost = useRef<ScratchingPost>({ x: 175, y: 20, width: 50, height: 40 }); // Centered for mobile
 
   const GRAVITY = 0.5;
   const JUMP_FORCE = -12;
   const MOVE_SPEED = 5;
-  const CANVAS_WIDTH = 800;
-  const CANVAS_HEIGHT = 600;
+  const CANVAS_WIDTH = 400; // Mobile portrait width
+  const CANVAS_HEIGHT = 600; // Mobile portrait height
 
   // Load kitty image
   useEffect(() => {
@@ -550,6 +586,24 @@ export const MultiplayerGame = ({ user, roomId, onLeaveRoom }: MultiplayerGamePr
     }
   };
 
+  // Mobile touch controls
+  const handleTouchControl = useCallback((direction: 'left' | 'right' | 'jump') => {
+    switch (direction) {
+      case 'left':
+        keysRef.current.add('a');
+        setTimeout(() => keysRef.current.delete('a'), 100);
+        break;
+      case 'right':
+        keysRef.current.add('d');
+        setTimeout(() => keysRef.current.delete('d'), 100);
+        break;
+      case 'jump':
+        keysRef.current.add('w');
+        setTimeout(() => keysRef.current.delete('w'), 100);
+        break;
+    }
+  }, []);
+
   // Key handling
   const handleKeyDown = useCallback((e: KeyboardEvent) => {
     const key = e.key.toLowerCase();
@@ -846,81 +900,188 @@ export const MultiplayerGame = ({ user, roomId, onLeaveRoom }: MultiplayerGamePr
   }
 
   return (
-    <div className="min-h-screen bg-gradient-background p-4">
-      <div className="max-w-7xl mx-auto">
-        <div className="text-center mb-4">
-          <h1 className="text-3xl font-bold mb-2 bg-gradient-primary bg-clip-text text-transparent">
-            🎮 {room.name}
-          </h1>
-          <div className="flex justify-center gap-4 text-sm text-muted-foreground">
-            <span>Código: {room.code}</span>
-            <span>Jogadores: {players.length}/5</span>
-            <span>Status: {room.status === 'waiting' ? 'Aguardando' : room.status === 'playing' ? 'Em jogo' : 'Finalizado'}</span>
+    <div className="min-h-screen bg-gradient-background">
+      {/* Mobile Layout */}
+      {isMobile ? (
+        <div className="flex flex-col h-screen">
+          {/* Header Mobile */}
+          <div className="p-3 bg-background/80 backdrop-blur border-b">
+            <div className="text-center">
+              <h1 className="text-lg font-bold bg-gradient-primary bg-clip-text text-transparent">
+                🎮 {room.name}
+              </h1>
+              <div className="flex justify-center gap-3 text-xs text-muted-foreground">
+                <span>Código: {room.code}</span>
+                <span>👥 {players.length}/5</span>
+                <span>Status: {room.status === 'waiting' ? 'Aguardando' : room.status === 'playing' ? 'Em jogo' : 'Finalizado'}</span>
+              </div>
+            </div>
           </div>
-        </div>
 
-        <div className="grid lg:grid-cols-5 gap-4">
-          {/* Game Area */}
-          <div className="lg:col-span-3">
-            <Card className="p-4 game-ui-card">
+          {/* Game Stats Mobile */}
+          {gameStarted && (
+            <div className="flex justify-center gap-4 p-2 bg-background/60 backdrop-blur text-sm font-semibold">
+              <span className="text-destructive">⏰ {timeLeft}s</span>
+              <span className="text-primary">🎯 Rodada {currentRound}</span>
+              <span className="text-accent">🐟 1 peixe</span>
+            </div>
+          )}
+
+          {/* Game Canvas Mobile */}
+          <div className="flex-1 flex items-center justify-center p-2">
+            <div className="relative">
               {room.status === 'waiting' && (
-                <div className="text-center mb-4">
-                  <p className="mb-4">Aguardando início do jogo...</p>
+                <div className="absolute inset-0 z-10 bg-background/90 backdrop-blur flex flex-col items-center justify-center rounded-lg">
+                  <p className="mb-4 text-center">Aguardando início do jogo...</p>
                   <Button onClick={startGame} className="bg-gradient-primary hover:opacity-90">
                     🚀 Iniciar Jogo
                   </Button>
                 </div>
               )}
               
-              {gameStarted && (
-                <div className="flex justify-center gap-6 mb-4 text-lg font-semibold">
-                  <span className="text-destructive">⏰ {timeLeft}s</span>
-                  <span className="text-primary">🎯 Rodada {currentRound}</span>
-                  <span className="text-accent">🐟 Meta: {currentRound} peixe(s)</span>
-                </div>
-              )}
-
-              <div className="flex justify-center">
-                <canvas 
-                  ref={canvasRef}
-                  width={CANVAS_WIDTH}
-                  height={CANVAS_HEIGHT}
-                  className="border-2 border-primary/30 rounded-lg"
-                />
-              </div>
-
-              {gameStarted && (
-                <div className="text-center text-sm text-muted-foreground mt-4">
-                  <p>🎮 Use WASD ou setas para mover • Pegue o peixe e leve ao arranhador no topo! • Meta: {currentRound} peixe(s) por jogador</p>
-                </div>
-              )}
-            </Card>
-
-            <div className="flex justify-center gap-2 mt-4">
-              <Button onClick={leaveRoom} variant="outline">
-                ← Sair da Sala
-              </Button>
-              <Button onClick={onLeaveRoom} variant="secondary">
-                🔄 Mudar de Sala
-              </Button>
+              <canvas 
+                ref={canvasRef}
+                width={CANVAS_WIDTH}
+                height={CANVAS_HEIGHT}
+                className="border-2 border-primary/30 rounded-lg max-w-full max-h-full"
+                style={{ 
+                  width: '100%', 
+                  height: 'auto',
+                  maxWidth: '400px',
+                  maxHeight: '600px'
+                }}
+              />
             </div>
           </div>
 
-          {/* Ranking Sidebar */}
-          <div className="lg:col-span-1">
-            <RankingBoard roomId={roomId} players={players} />
+          {/* Mobile Controls */}
+          {gameStarted && (
+            <div className="p-4 bg-background/80 backdrop-blur border-t">
+              <div className="flex justify-between items-center max-w-md mx-auto">
+                {/* Left Control */}
+                <button
+                  onTouchStart={() => handleTouchControl('left')}
+                  className="w-16 h-16 bg-primary/20 border-2 border-primary/40 rounded-full flex items-center justify-center text-2xl font-bold active:bg-primary/40 transition-colors"
+                >
+                  ←
+                </button>
+
+                {/* Jump Control */}
+                <button
+                  onTouchStart={() => handleTouchControl('jump')}
+                  className="w-20 h-20 bg-accent/20 border-2 border-accent/40 rounded-full flex items-center justify-center text-2xl font-bold active:bg-accent/40 transition-colors"
+                >
+                  ↑
+                </button>
+
+                {/* Right Control */}
+                <button
+                  onTouchStart={() => handleTouchControl('right')}
+                  className="w-16 h-16 bg-primary/20 border-2 border-primary/40 rounded-full flex items-center justify-center text-2xl font-bold active:bg-primary/40 transition-colors"
+                >
+                  →
+                </button>
+              </div>
+              
+              {/* Mobile Instructions */}
+              <div className="text-center text-xs text-muted-foreground mt-3">
+                📱 Toque nos botões para jogar • Pegue o peixe e leve ao arranhador!
+              </div>
+            </div>
+          )}
+
+          {/* Mobile Bottom Actions */}
+          <div className="p-3 bg-background/80 backdrop-blur border-t flex gap-2">
+            <Button onClick={leaveRoom} variant="outline" size="sm" className="flex-1">
+              ← Sair
+            </Button>
+            <Button onClick={onLeaveRoom} variant="secondary" size="sm" className="flex-1">
+              🔄 Mudar Sala
+            </Button>
           </div>
 
-          {/* Chat Bottom Section */}
-          <div className="lg:col-span-1">
-            <MultiplayerChat 
-              roomId={roomId} 
-              user={user} 
-              players={players}
-            />
+          {/* Mobile Chat Overlay */}
+          <MobileChatOverlay roomId={roomId} user={user} players={players} />
+        </div>
+      ) : (
+        /* Desktop Layout */
+        <div className="p-4">
+          <div className="max-w-7xl mx-auto">
+            <div className="text-center mb-4">
+              <h1 className="text-3xl font-bold mb-2 bg-gradient-primary bg-clip-text text-transparent">
+                🎮 {room.name}
+              </h1>
+              <div className="flex justify-center gap-4 text-sm text-muted-foreground">
+                <span>Código: {room.code}</span>
+                <span>Jogadores: {players.length}/5</span>
+                <span>Status: {room.status === 'waiting' ? 'Aguardando' : room.status === 'playing' ? 'Em jogo' : 'Finalizado'}</span>
+              </div>
+            </div>
+
+            <div className="grid lg:grid-cols-5 gap-4">
+              {/* Game Area */}
+              <div className="lg:col-span-3">
+                <Card className="p-4 game-ui-card">
+                  {room.status === 'waiting' && (
+                    <div className="text-center mb-4">
+                      <p className="mb-4">Aguardando início do jogo...</p>
+                      <Button onClick={startGame} className="bg-gradient-primary hover:opacity-90">
+                        🚀 Iniciar Jogo
+                      </Button>
+                    </div>
+                  )}
+                  
+                  {gameStarted && (
+                    <div className="flex justify-center gap-6 mb-4 text-lg font-semibold">
+                      <span className="text-destructive">⏰ {timeLeft}s</span>
+                      <span className="text-primary">🎯 Rodada {currentRound}</span>
+                      <span className="text-accent">🐟 1 peixe</span>
+                    </div>
+                  )}
+
+                  <div className="flex justify-center">
+                    <canvas 
+                      ref={canvasRef}
+                      width={CANVAS_WIDTH}
+                      height={CANVAS_HEIGHT}
+                      className="border-2 border-primary/30 rounded-lg"
+                    />
+                  </div>
+
+                  {gameStarted && (
+                    <div className="text-center text-sm text-muted-foreground mt-4">
+                      <p>🎮 Use WASD ou setas para mover • Pegue o peixe e leve ao arranhador no topo!</p>
+                    </div>
+                  )}
+                </Card>
+
+                <div className="flex justify-center gap-2 mt-4">
+                  <Button onClick={leaveRoom} variant="outline">
+                    ← Sair da Sala
+                  </Button>
+                  <Button onClick={onLeaveRoom} variant="secondary">
+                    🔄 Mudar de Sala
+                  </Button>
+                </div>
+              </div>
+
+              {/* Ranking Sidebar */}
+              <div className="lg:col-span-1">
+                <RankingBoard roomId={roomId} players={players} />
+              </div>
+
+              {/* Chat Bottom Section */}
+              <div className="lg:col-span-1">
+                <MultiplayerChat 
+                  roomId={roomId} 
+                  user={user} 
+                  players={players}
+                />
+              </div>
+            </div>
           </div>
         </div>
-      </div>
+      )}
     </div>
   );
 };
